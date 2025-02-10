@@ -45,7 +45,7 @@ def convert_format(raw: list) -> list:
     return result
 
 if __name__ == "__main__":
-    max_workers = 1
+    max_workers = 10
     batch_size = 10
     offset = 0
     

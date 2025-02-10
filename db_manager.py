@@ -75,7 +75,6 @@ class DatabaseManager:
         users = session.query(Message.userId)\
            .join(MigratedUser, Message.userId != MigratedUser.user_id, isouter=True)\
            .filter(MigratedUser.user_id == None)\
-           .order_by(Message.createdAt.desc())\
            .limit(take)\
            .offset(skip)\
            .distinct()\
