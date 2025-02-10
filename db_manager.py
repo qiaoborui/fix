@@ -4,16 +4,28 @@ from datetime import datetime
 from typing import List, Dict
 from sqlalchemy import create_engine, func
 from sqlalchemy.orm import sessionmaker
-from models import Base, Message, ProcessedUser,MigratedUser
+from models import Base, Message, ProcessedUser, MigratedUser
 
 class DatabaseManager:
-    def __init__(self, db_path: str = 'messages.db'):
+    def __init__(self, db_config: Dict = None):
         try:
-            if os.path.exists(db_path):
-                if not os.access(db_path, os.W_OK):
-                    raise PermissionError(f"数据库文件 {db_path} 没有写入权限")
+            db_config = {
+                'host': os.getenv('DB_HOST', 'localhost'),
+                'port': os.getenv('DB_PORT', '6666'),
+                'database': os.getenv('DB_NAME', 'messages'),
+                'user': os.getenv('DB_USER', 'postgres'),
+                'password': os.getenv('DB_PASSWORD', 'postgres')
+            }
+            # 构建PostgreSQL连接URL
+            db_url = f"postgresql://{db_config['user']}:{db_config['password']}@{db_config['host']}:{db_config['port']}/{db_config['database']}"
             
-            self.engine = create_engine(f'sqlite:///{db_path}')
+            self.engine = create_engine(
+                db_url,
+                pool_size=5,
+                max_overflow=10,
+                pool_timeout=30,
+                pool_recycle=1800
+            )
             self.Session = sessionmaker(bind=self.engine)
             self.init_database()
         except Exception as e:
