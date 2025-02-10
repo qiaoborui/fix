@@ -2,7 +2,7 @@ import requests
 import json
 
 class ConversationAPI:
-    def __init__(self, base_url="http://localhost:8081"):
+    def __init__(self, base_url="https://conversation-gateway.flowgpt.com/"):
         self.base_url = base_url
         self.headers = {
             'Content-Type': 'application/json'
