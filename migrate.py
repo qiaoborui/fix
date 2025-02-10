@@ -17,13 +17,22 @@ def process_conversation(conversation: dict):
 def migrate_one_user(user_id: str):
     conversations = db.get_user_conversations(user_id)
     conversations = convert_format(conversations)
+    total_convs = len(conversations)
+    print(f"Processing {total_convs} conversations for user {user_id}")
+    
     with ThreadPoolExecutor(max_workers=5) as conv_executor:
         futures = [conv_executor.submit(process_conversation, conv) for conv in conversations]
+        completed = 0
         for future in as_completed(futures):
             try:
                 future.result()
+                completed += 1
+                if completed % 10 == 0:  # 每处理10个会话显示一次进度
+                    print(f"User {user_id}: Processed {completed}/{total_convs} conversations")
             except Exception as exc:
                 print(f"Error processing conversation: {exc}")
+    
+    print(f"Completed processing user {user_id}")
     db.mark_user_as_migrated(user_id)
 
 def convert_format(raw: list) -> list:
@@ -36,10 +45,16 @@ def convert_format(raw: list) -> list:
     return result
 
 if __name__ == "__main__":
-    max_workers=1
-    users = db.get_users(10, 0)
-    print(users)
-    if users:
+    max_workers = 1
+    batch_size = 10
+    offset = 0
+    
+    while True:
+        users = db.get_users(batch_size, offset)
+        if not users:
+            break
+            
+        print(f"Processing batch of users from offset {offset}")
         with ThreadPoolExecutor(max_workers=max_workers) as user_executor:
             futures = [user_executor.submit(migrate_one_user, user[0]) for user in users]
             for future in as_completed(futures):
@@ -47,3 +62,6 @@ if __name__ == "__main__":
                     future.result()
                 except Exception as exc:
                     print(f"Error processing user: {exc}")
+        
+        offset += batch_size
+        print(f"Completed batch, moving to offset {offset}")
